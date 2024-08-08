@@ -166,7 +166,7 @@ export default function App() {
 
 ### Using App Router
 
-### QueryCLientProvider Component
+#### QueryCLientProvider Component
 
 QueryClientProvider 컴포넌트는 Context API를 사용하기 때문에 서버 컴포넌트에 사용할 수 없으므로 클라이언트 컴포넌트로 분리하여 사용해야 합니다.
 
@@ -216,7 +216,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
 }
 ```
 
-### prefetching & de/hydrate
+#### prefetching & de/hydrate
 
 서버에서 prefeth한 쿼리들을 갖는 queryClient를 dehydrate시켰다가 이후 클라이언트측에 전달할 때는 hydrate 시켜 전달해주어야 합니다.
 
