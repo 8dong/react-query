@@ -291,3 +291,132 @@ export default async function Home({ children }: PropsWithChildren) {
   );
 }
 ```
+
+## Caching Life Cycle
+
+- fresh
+
+query에 설정된 staleTime이 지나지 않은 상태이며, fresh 상태에서는 refetching하지 않으며 캐싱된 쿼리를 사용합니다.
+
+- fetching
+
+queryFn이 실행중인 상태입니다.
+
+- stale
+
+query에 설정된 staleTime이 지났으며 이는 refetching하여 새로운 데이터를 불러 캐싱하게 됩니다. 이때 refetching하는 동안에는 기존 stale 상태의 쿼리르 사용하며 이후 refething이 완료되면 새로운 데이터로 교체하고 이를 캐싱하게 됩니다.
+
+- inactive
+
+쿼리가 실행된 컴포넌트가 unmount되는 경우 해당 쿼리는 inactive 상태가 됩니다. inactive 상태는 사용되지는 않지만 메모리상 아직 캐싱되어 있는 상태입니다.
+
+- delete
+
+inactive 상태인 쿼리에 설정된 gcTime이 지난 상태이며 이는 가비지 컬렉터에 의해 메모리상에서 제거됩니다.
+
+## useQuery
+
+```javascript
+import { useQuery } from 'react-query';
+
+async function fetchData() {
+  return fetch('https://,,,', { method: 'GET' });
+}
+
+const {
+  data, // queryFn이 반환한 값, 초기 queryFn 실행이 완료되기 전에는 undefined 반환
+  dataUpdatedAt, // 마지막으로 fetching한 타임스탬프
+  error, // queryFn 실행 중 에러 발생한 경우 에러 객체가 바인딩
+  isError, // queryFn 실행 중 에러 발생 여부
+  errorUpdateCount, // 에러가 발샣하기 까지의 queryFn 실행 횟수
+  errorUpdatedAt, // 마지막으로 에러가 발생한 타임스탬프
+  failureCount, // 에러가 발생한 횟수
+  failureReason, // 마지막으로 발생한 에러의 메세지 혹은 객체
+  fetchStatus, // 햔제 queryFn 실행 상태 반환(idle, fetching, pause)
+  isFetched, // queryFn이 성공적으로 실행되었는지 여부
+  isFetchedAfterMount, // 마운트된 이후 queryFn이 성공적으로 실행되었는지 여부
+  isFetching, // queryFn이 현재 실행중인지 여부
+  isLoading, // queryFn이 첫 실행이며 현재 실행중인지 여부
+  isLoadingError, // queryFn 첫 실행중 에러 발생 여부
+  isPaused, // queryFn 일시 중지 여부
+  isPending, // queryFn 실행 대기중 여부(isFetching과 유사하지만 더 포괄적)
+  isPlaceholderData, // 현재 data가 placeholder 데이터인지 여부
+  isRefetchError, // refetching 도중 에러 발생 여부
+  isRefetching, // 현재 refetching 중인지 여부
+  isStale, // 캐싱 상태가 stale인지 여부
+  isSuccess, // queryFn이 성공적으로 실행되었는지 여부
+  refetch, // 수동으로 refetching하는 함수
+  status // 현재 쿼리 상태를 반환(idle, loading, error, success)
+} = useQuery({
+  /**
+   * queryKey를 기반으로 캐싱 관리되며 만약 queryFn 함수 내에서 특정 변수에
+   * 의존하고 있다면 queryKey 배열 요소로 추가해주어야 함.
+   * **/
+  queryKey: ['queryKey'],
+  queryFn: fetchData // Promise 객체를 반환하는 함수 작성
+});
+```
+
+## useQueries
+
+```javascript
+import { useQueries } from 'react-query';
+
+async function fetchData1() {
+  return fetch('https://,,,', { method: 'GET' });
+}
+
+async function fetchData2() {
+  return fetch('https://,,,', { method: 'GET' });
+}
+
+/**
+ * useQueries 훅은 여러 쿼리들을 병렬로 요청하고
+ * 모든 쿼리 결과가 포함된 배열을 반환
+ * **/
+const queryResults = useQueries({
+  queries: [
+    {
+      queryKey: ['fetchData1'],
+      queryFn: fetchData1
+    },
+    {
+      queryKey: ['fetchData2'],
+      queryFn: fetchData2
+    }
+  ]
+});
+```
+
+## useSuspenseQuery
+
+useSuspenseQuery 훅은 Suspense와 함께 사용하면 쿼리 상태(status)가 loading인 경우 Suspense의 fallback props에 설정한 컴포넌트를 표시해줍니다.
+
+```javascript
+import { useSuspenseQuery } from 'react-query';
+
+export default function Child() {
+  async function fetchData() {
+    return fetch('https://,,,', { method: 'GET' });
+  }
+
+  const queryResult = useSuspenseQuery({
+    queryKey: ['queryKey'],
+    queryFn: fetchData
+  });
+
+  return <div>{/* ,,, */}</div>;
+}
+```
+
+```javascript
+import { Suspense } from 'react';
+
+export default function Parent() {
+  return (
+    <Suspense fallback={<div>loading,,,</div>}>
+      <Child />
+    </Suspense>
+  );
+}
+```
