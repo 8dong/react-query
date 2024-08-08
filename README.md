@@ -163,3 +163,131 @@ export default function App() {
   return <QueryClientProvider client={queryClient}>,,,</QueryClientProvider>;
 }
 ```
+
+### Using App Router
+
+### QueryCLientProvider Component
+
+QueryClientProvider 컴포넌트는 Context API를 사용하기 때문에 서버 컴포넌트에 사용할 수 없으므로 클라이언트 컴포넌트로 분리하여 사용해야 합니다.
+
+```javascript
+// ReactQueryProviders.tsx
+'use client';
+
+import { useState, PropsWithChildren } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+export default function ReactQueryProviders({ children }: PropsWithChildren) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // 클라이언트측에서 즉시 refetching되는 것을 방지하기 위해서 staleTime 값을 0으로 사용되즌 것을 방지
+            staleTime: 60 * 1000
+          }
+        }
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>>
+  )
+}
+```
+
+```javascript
+// app/layout.tsx
+import { PropsWithChildren } from 'react';
+
+import ReactQueryProviders from '@/shared/components/ReactQueryProviders';
+
+export default function RootLayout({ children }: PropsWithChildren) {
+  return (
+    <html>
+      <head />
+      <body>
+        <ReactQueryProviders>{children}</ReactQueryProviders>
+      </body>
+    </html>
+  );
+}
+```
+
+### prefetching & de/hydrate
+
+서버에서 prefeth한 쿼리들을 갖는 queryClient를 dehydrate시켰다가 이후 클라이언트측에 전달할 때는 hydrate 시켜 전달해주어야 합니다.
+
+```javascript
+// getDehydratedQuery.ts
+
+import {
+  QueryClient,
+  dehydrate,
+  QueryState,
+  QueryKey
+} from '@tanstack/react-query';
+import { cache } from 'react';
+
+import { isEqual } from '@/utils';
+
+// cache 함수를 사용하여 QueryClient를 매번 생성하지 않고 캐싱된 queryClient를 재사용
+export const getQueryClient = cache(() => new QueryClient());
+
+type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
+
+interface QueryProps<ResponseType = unknown> {
+  queryKey: QueryKey;
+  queryFn: () => Promise<ResponseType>;
+}
+
+interface DehydratedQueryExtended<TData = unknown, TError = unknown> {
+  state: QueryState<TData, TError>;
+}
+
+export async function getDehydratedQuery<Q extends QueryProps>({
+  queryKey,
+  queryFn,
+}: Q) {
+  const queryClient = getQueryClient();
+
+  // 필요한 쿼리를 prefetching
+  await queryClient.prefetchQuery({ queryKey, queryFn });
+
+  // perfetching한 쿼리를 갖고 있는 queryClient를 dehydate
+  // dehydate 메서드는 쿼리들을 직렬화시키고 이를 이용하여 per-rendering
+  const { queries } = dehydrate(queryClient);
+
+  // dehydate 함수는 prefetcing한 모든 데이터들을 반환하기 때문에 요청한 쿼리만을 필터링하여 반환
+  const [dehydratedQuery] = queries.filter((query) =>
+    isEqual(query.queryKey, queryKey)
+  );
+
+  return dehydratedQuery as DehydratedQueryExtended<
+    UnwrapPromise<ReturnType<Q['queryFn']>>
+  >;
+}
+```
+
+```javascript
+// app/page.tsx
+
+import { HydrationBoundary } from 'react-query';
+
+import { getDehydratedQuery } from '@/app/shared/utils/getDehydratedQuery';
+
+export default async function Home({ children }: PropsWithChildren) {
+  const { queryKey, queryFn } = queryOptions.all();
+
+  const query = await getDehydratedQuery({ queryKey, queryFn });
+
+  return (
+    <main>
+      {/* HydrationBoundary 컴포넌트는 클라이언트측에서 dehydrated된 쿼리들을 역직렬화 시켜 hydration 과정에서 초기 쿼리들로 사용 */}
+      <HydrationBoundary state={{ queries: [query] }}>{children}</HydrationBoundary>
+    </main>
+  );
+}
+```
