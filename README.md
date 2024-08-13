@@ -448,3 +448,43 @@ const {
   getPreviousPageParam: (firstPage, allPages, firstPageParam, allPageParams) => firstPage.prevCursor // 이전 페이지의 queryFn 함수 pageParam 값 반환
 });
 ```
+
+## useMutation
+
+useMutation 훅은 주로 데이터 생성, 수정, 삭제와 같은 변이 작업을 처리할 때 사용합니다. useMutation을 통해 비동기 작업을 수행하고, 해당 작업의 상태를 추적할 수 있습니다.
+
+```javascript
+import { useMutation } from '@tanstack/react-query';
+
+const {
+  data, // mutationFn 실행이 완료되어 반환한 데이터
+  error, // mutationFn 실행 중 발생한 에러 객체
+  isError, // mutationFn 실행 실패 여부를 반환
+  isIdle, // mutationFn 실행 전인지에 대한 여부를 반환
+  isPending, // mutationFn 실행 대기중이거나 실행중인지에 대한 여부를 반환
+  isPaused, // mutationFn 실행의 중지 여부를 반환
+  isSuccess, // mutationFn 실행 성공적으로 완료되었는지에 대한 여부
+  failureCount, // mutationFn 실행 실패한 횟수
+  failureReason, // mutationFn 마지막에 실행 실패한 에러 객체
+  mutate, // mutate 메서드 호출 시 mutationFn 실행
+  mutateAsync, // mutateAsync 호출 시 Promise 객체 반환하는 mutationFn 실행
+  reset, // mutationFn 실행 상태 초기화 메서드(data, error, isSuccess, isError 등 초기화)
+  status, // mutationFn 실행 상태(idle, pending, error, success) 반환
+  submittedAt, // mutationFn 처음 실행된 타임스탬프 반환
+  variables // 마지막 mutate 메서드 호출 시 전달한 변수 반환
+} = useMutation({
+  mutationFn, // 실제 변이 작업 수행하는 함수
+  gcTime, // 변이 작업 캐시가 GC 되기까지의 시간(밀리초)
+  meta, // 변이 작업에 추가적으로 전달할 메타데이터
+  mutationKey, // 변이 작업을 고유하게 식별하는 키 값
+  networkMode, // 네트워트 상태에 따른 변이 작업 처리 설정
+  onError, // 변이 작업 실패시 호출되는 콜백 함수. error, variables, context를 인자로 전달 받아 실행
+  onMutate, // 변이 작업 실행 전에 호출되는 콜백 함수
+  onSettled, // 변이 작업 성공하거나 실패한 후에 항상 호출되는 콜백 함수. data, error, variables, context 인자 전달 받아 실행
+  onSuccess, // 변이 작업 성공적으로 완료된 후 호출되는 콜백 함수. data, variables, context 인자 전달 받아 실행
+  retry, // 변이 작업 실패했을 때 재시도할 횟수
+  retryDelay, // 변이 작업 실패했을 때 재시도하기 전 대기할 시간(밀리초)
+  scope, // 변이 작업 범위 지정
+  throwOnError // true 설정 시 변이 작업 중 에러 발생한 경우 에러를 throw하여 호출자에게 전달
+});
+```
