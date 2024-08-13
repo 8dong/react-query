@@ -420,3 +420,31 @@ export default function Parent() {
   );
 }
 ```
+
+## useInfiniteQuery
+
+useInfiniteQuery 훅은 특정 조건에서 추가적인 데이터를 fetching 기능을 제공해줍니다. 이를 통해 무한 스크롤 이나 페이징 기능을 구현할 수 있습니다.
+
+```javascript
+import { useInfiniteQuery } from '@tanstack/react-query';
+
+const {
+  data: {
+    pages, // 모든 페이지의 데이터를 포함하는 배열
+    pageParams // 모든 페이지에 대한 pageParam 배열
+  },
+  fetchNextPage, // 다음 페이지의 데이터를 fetching하는 함수이며, 호출시 queryFn이 실행
+  fetchPreviousPage, // 이전 페이지의 데이터를 fethcing하는 함수
+  hasNextPage, // 다음 페이지 존재 여부를 반환. 해당 값은 getNextPageParam 함수가 undefined인 경우 true 반환
+  hasPreviousPage, // 이전 페이지의 존재 여부 반환. getPreviousPageParam 함수가 undefined인 경우 true 반환
+  isFetchingNextPage, // 다음 페이지의 데이터를 fetching 중인지 여부를 반환
+  isFetchingPreviousPage, // 이전 페이지의 데이터를 fetching 중인지 여부를 반환
+  ...result
+} = useInfiniteQuery({
+  queryKey, // 쿼리를 고유하게 식별하는 키
+  queryFn: ({ pageParam }) => fetchPage(pageParam), // 데이터를 fetching하는 비동기 함수, 인수로 pageParam 전달받아 실행
+  initialPageParam: 1, // 초기 pageParam 값
+  getNextPageParam: (lastPage, allPages, lastPageParam, allPageParams) => lastPage.nextCursor, // 다음 페이지의 queryFn 함수 pageParam 값 반환. 인수로 현재 페이지의 데이터, 전체 페이지의 데이터 배열, 현재 페이지의 pageParam, 전체 페이지의 pageParam 배열을 전달받아 실행
+  getPreviousPageParam: (firstPage, allPages, firstPageParam, allPageParams) => firstPage.prevCursor // 이전 페이지의 queryFn 함수 pageParam 값 반환
+});
+```
